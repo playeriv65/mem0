@@ -33,6 +33,10 @@ MEMGRAPH_PASSWORD = os.environ.get("MEMGRAPH_PASSWORD", "mem0graph")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 HISTORY_DB_PATH = os.environ.get("HISTORY_DB_PATH", "/app/history/history.db")
 
+# Ensure the directory for the history database exists
+if HISTORY_DB_PATH:
+    os.makedirs(os.path.dirname(HISTORY_DB_PATH), exist_ok=True)
+
 DEFAULT_CONFIG = {
     "version": "v1.1",
     "vector_store": {
