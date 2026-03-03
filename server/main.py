@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
+from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 from pydantic import BaseModel, Field
 
 from mem0 import Memory
@@ -30,28 +31,53 @@ MEMGRAPH_URI = os.environ.get("MEMGRAPH_URI", "bolt://localhost:7687")
 MEMGRAPH_USERNAME = os.environ.get("MEMGRAPH_USERNAME", "memgraph")
 MEMGRAPH_PASSWORD = os.environ.get("MEMGRAPH_PASSWORD", "mem0graph")
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY")
 HISTORY_DB_PATH = os.environ.get("HISTORY_DB_PATH", "/app/history/history.db")
+
+# Initialize NVIDIA Embeddings
+nvidia_embeddings = NVIDIAEmbeddings(
+    model="nvidia/llama-nemotron-embed-vl-1b-v2",
+    api_key=NVIDIA_API_KEY,
+    truncate="NONE",
+)
+
+from qdrant_client import QdrantClient
+
+# Initialize Qdrant Client
+QDRANT_HOST = os.environ.get("QDRANT_HOST", "qdrant")
+qdrant_client_ins = QdrantClient(host=QDRANT_HOST, port=6333)
 
 DEFAULT_CONFIG = {
     "version": "v1.1",
     "vector_store": {
-        "provider": "pgvector",
+        "provider": "qdrant",
         "config": {
-            "host": POSTGRES_HOST,
-            "port": int(POSTGRES_PORT),
-            "dbname": POSTGRES_DB,
-            "user": POSTGRES_USER,
-            "password": POSTGRES_PASSWORD,
-            "collection_name": POSTGRES_COLLECTION_NAME,
+            "collection_name": "memories_2048",
+            "client": qdrant_client_ins,
+            "embedding_model_dims": 2048,
         },
     },
     "graph_store": {
         "provider": "neo4j",
         "config": {"url": NEO4J_URI, "username": NEO4J_USERNAME, "password": NEO4J_PASSWORD},
     },
-    "llm": {"provider": "openai", "config": {"api_key": OPENAI_API_KEY, "temperature": 0.2, "model": "gpt-4.1-nano-2025-04-14"}},
-    "embedder": {"provider": "openai", "config": {"api_key": OPENAI_API_KEY, "model": "text-embedding-3-small"}},
+    "llm": {
+        "provider": "openai",
+        "config": {
+            "api_key": NVIDIA_API_KEY,
+            "openai_base_url": "https://integrate.api.nvidia.com/v1",
+            "model": "moonshotai/kimi-k2-instruct-0905",
+            "temperature": 0.6,
+            "top_p": 0.9,
+            "max_tokens": 4096,
+        }
+    },
+    "embedder": {
+        "provider": "langchain",
+        "config": {
+            "model": nvidia_embeddings,
+        }
+    },
     "history_db_path": HISTORY_DB_PATH,
 }
 
