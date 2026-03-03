@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 from pydantic import BaseModel, Field
+from qdrant_client import QdrantClient
 
 from mem0 import Memory
 
@@ -40,8 +41,6 @@ nvidia_embeddings = NVIDIAEmbeddings(
     api_key=NVIDIA_API_KEY,
     truncate="NONE",
 )
-
-from qdrant_client import QdrantClient
 
 # Initialize Qdrant Client
 QDRANT_HOST = os.environ.get("QDRANT_HOST", "qdrant")
