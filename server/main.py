@@ -33,6 +33,10 @@ MEMGRAPH_PASSWORD = os.environ.get("MEMGRAPH_PASSWORD", "mem0graph")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 HISTORY_DB_PATH = os.environ.get("HISTORY_DB_PATH", "/app/history/history.db")
 
+# LLM and Embedder model configuration (can be overridden via environment variables)
+LLM_MODEL = os.environ.get("LLM_MODEL", "gemini-3.1-flash-lite-preview")
+EMBEDDER_MODEL = os.environ.get("EMBEDDER_MODEL", "models/gemini-embedding-001")
+
 # Ensure the directory for the history database exists
 if HISTORY_DB_PATH:
     os.makedirs(os.path.dirname(HISTORY_DB_PATH), exist_ok=True)
@@ -55,20 +59,10 @@ DEFAULT_CONFIG = {
         "provider": "neo4j",
         "config": {"url": NEO4J_URI, "username": NEO4J_USERNAME, "password": NEO4J_PASSWORD},
     },
-    "llm": {
-        "provider": "gemini",
-        "config": {
-            "api_key": GOOGLE_API_KEY,
-            "model": "gemini-2.5-flash"
-        }
-    },
+    "llm": {"provider": "gemini", "config": {"api_key": GOOGLE_API_KEY, "model": LLM_MODEL}},
     "embedder": {
         "provider": "gemini",
-        "config": {
-            "api_key": GOOGLE_API_KEY,
-            "model": "models/gemini-embedding-001",
-            "embedding_dims": 1536
-        }
+        "config": {"api_key": GOOGLE_API_KEY, "model": EMBEDDER_MODEL, "embedding_dims": 1536},
     },
     "history_db_path": HISTORY_DB_PATH,
 }
@@ -170,11 +164,11 @@ def search_memories(search_req: SearchRequest):
 @app.put("/memories/{memory_id}", summary="Update a memory")
 def update_memory(memory_id: str, updated_memory: Dict[str, Any]):
     """Update an existing memory with new content.
-    
+
     Args:
         memory_id (str): ID of the memory to update
         updated_memory (str): New content to update the memory with
-        
+
     Returns:
         dict: Success message indicating the memory was updated
     """
